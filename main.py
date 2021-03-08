@@ -8,7 +8,7 @@ from urllib.parse import parse_qs
 import os
 from dataclasses import dataclass
 from pathlib import Path
-
+from bs4 import BeautifulSoup
 
 
 @dataclass
@@ -18,7 +18,7 @@ class Config:
     username: str
     password: str
     hostname: str
-    
+
 
 def config() -> Config:
     
@@ -52,7 +52,7 @@ class YoutubeEnhancer():
         url = article['url'] or ""
         return self.matcher.match(url)
 
-    def patch(self, article) -> dict:
+    async def patch(self, article, session=None) -> dict:
         url = article['url'] or ""
         parsed = urlparse.urlparse(url)
         url = parse_qs(parsed.query)['url']
@@ -61,6 +61,15 @@ class YoutubeEnhancer():
 
         if url:
             d['origin_url'] = url[0]
+            url = url[0]
+
+        async with session.get(url) as resp:
+            html =  await resp.text()
+            soup = BeautifulSoup(html, 'html.parser')
+
+            descriptions = [link for link in soup.find_all('meta') if "name" in link.attrs and link.attrs["name"] == "description"]
+            if descriptions:
+                d['content'] = descriptions[0].attrs['content']
 
         return d
 
@@ -124,7 +133,8 @@ async def main(config: Config, loop):
 
                 for enhancer in enhancers:
                     if enhancer.should(article):
-                        d = {**d, **enhancer.patch(article)}
+                        result = await enhancer.patch(article, session=session)
+                        d = {**d, **result}
 
                 await patch_article(wallabag, article, **d)
             else:
