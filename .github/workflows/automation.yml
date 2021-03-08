@@ -6,6 +6,9 @@ name: Enhance my wallabag
 on:
   schedule:
   - cron: "0 * * * *"
+  push:
+    branches:
+    - main
 
 jobs:
   deploy:
