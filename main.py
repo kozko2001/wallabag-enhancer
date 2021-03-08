@@ -7,6 +7,9 @@ import urllib.parse as urlparse
 from urllib.parse import parse_qs
 import os
 from dataclasses import dataclass
+from pathlib import Path
+
+
 
 @dataclass
 class Config:
@@ -15,15 +18,29 @@ class Config:
     username: str
     password: str
     hostname: str
+    
 
 def config() -> Config:
-    return Config(
-        os.environ['CLIENT_SECRET'],
-        os.environ['CLIENT_ID'],
-        os.environ['USERNAME'],
-        os.environ['PASSWORD'],
-        os.environ['WALLABAG_HOST'],
-    )
+    
+
+    if Path('credentials.json').is_file():
+        with open('credentials.json', 'r') as f:
+            credentials = load(f)
+            return Config(
+                credentials['client_secret'],
+                credentials['client_id'],
+                credentials['username'],
+                credentials['password'],
+                credentials['host']
+            )
+    else:
+        return Config(
+            os.environ['CLIENT_SECRET'],
+            os.environ['CLIENT_ID'],
+            os.environ['USERNAME'],
+            os.environ['PASSWORD'],
+            os.environ['WALLABAG_HOST'],
+        )
 
 
 class YoutubeEnhancer():
