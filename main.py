@@ -9,6 +9,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from bs4 import BeautifulSoup
+from youtube_transcript_api import YouTubeTranscriptApi
 
 
 @dataclass
@@ -71,6 +72,19 @@ class YoutubeEnhancer():
             if descriptions:
                 d['content'] = descriptions[0].attrs['content']
 
+        
+        if url:
+            parsed = urlparse.urlparse(url)
+            video_id = parse_qs(parsed.query)['v']
+            if video_id:
+                captions = YouTubeTranscriptApi.get_transcript(video_id[0])
+                caption = "\n".join([f"<p>{caption['text']}</p>" for caption in captions])
+                d['content'] = f"""{d['content']}
+    <h3>CAPTION FROM YOUTUBE</h3><br/>
+    ====================<br/>
+    <br />
+    {caption}
+                """
         return d
 
 enhancers = [YoutubeEnhancer()]
